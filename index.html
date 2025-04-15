@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Futebol - Bola Não Sai do Campo</title>
+  <style>
+    body {
+      margin: 0;
+      background: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    canvas {
+      background: #2ecc71;
+      border: 4px solid white;
+      box-shadow: 0 0 20px black;
+      display: none;
+    }
+    #menu {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    #inputNumero {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="menu">
+  <button onclick="startGame()">Iniciar</button>
+  <button onclick="showNumero()">Numeração</button>
+</div>
+
+<div id="inputNumero">
+  <input type="number" id="numero" placeholder="Número do jogador" />
+  <button onclick="startGame()">Confirmar</button>
+</div>
+
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const player = {
+  x: 400,
+  y: 500,
+  width: 30,
+  height: 30,
+  color: "blue",
+  lastX: 400,
+  lastY: 500,
+  numero: ""
+};
+
+const ball = {
+  x: 400,
+  y: 400,
+  radius: 10,
+  color: "white",
+  speedX: 0,
+  speedY: 0
+};
+
+const goalie = {
+  x: 400,
+  y: 50,
+  width: 40,
+  height: 15,
+  color: "red",
+  speed: 3
+};
+
+let mouseX = player.x;
+let mouseY = player.y;
+let score = 0;
+
+canvas.addEventListener("mousemove", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+  mouseY = e.clientY - rect.top;
+});
+
+function drawField() {
+  ctx.fillStyle = "#2ecc71";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(canvas.width / 2 - 100, 0, 200, 10);
+  ctx.fillStyle = "white";
+  ctx.font = "20px Arial";
+  ctx.fillText(`Gols: ${score}`, 20, 30);
+}
+
+function drawPlayer() {
+  ctx.fillStyle = player.color;
+  ctx.fillRect(player.x - player.width / 2, player.y - player.height / 2, player.width, player.height);
+  if (player.numero !== "") {
+    ctx.fillStyle = "white";
+    ctx.font = "16px Arial";
+    ctx.fillText(player.numero, player.x - 6, player.y + 6);
+  }
+}
+
+function drawBall() {
+  ctx.fillStyle = ball.color;
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawGoalie() {
+  ctx.fillStyle = goalie.color;
+  ctx.fillRect(goalie.x - goalie.width / 2, goalie.y - goalie.height / 2, goalie.width, goalie.height);
+}
+
+function movePlayer() {
+  player.lastX = player.x;
+  player.lastY = player.y;
+  player.x += (mouseX - player.x) * 0.1;
+  player.y += (mouseY - player.y) * 0.1;
+}
+
+function moveGoalie() {
+  const ballMoving = Math.abs(ball.speedX) + Math.abs(ball.speedY) > 1;
+  if (ballMoving) {
+    if (ball.x < goalie.x) goalie.x -= goalie.speed;
+    if (ball.x > goalie.x) goalie.x += goalie.speed;
+  }
+}
+
+function moveBall() {
+  ball.x += ball.speedX;
+  ball.y += ball.speedY;
+  ball.speedX *= 0.98;
+  ball.speedY *= 0.98;
+
+  if (ball.x - ball.radius < 0) {
+    ball.x = ball.radius;
+    ball.speedX *= -1;
+  }
+  if (ball.x + ball.radius > canvas.width) {
+    ball.x = canvas.width - ball.radius;
+    ball.speedX *= -1;
+  }
+  if (ball.y - ball.radius < 0) {
+    if (ball.x > canvas.width / 2 - 100 && ball.x < canvas.width / 2 + 100) {
+      score++;
+      resetBall();
+    } else {
+      ball.y = ball.radius;
+      ball.speedY *= -1;
+    }
+  }
+  if (ball.y + ball.radius > canvas.height) {
+    ball.y = canvas.height - ball.radius;
+    ball.speedY *= -1;
+  }
+
+  if (
+    ball.y - ball.radius < goalie.y + goalie.height / 2 &&
+    ball.y + ball.radius > goalie.y - goalie.height / 2 &&
+    ball.x > goalie.x - goalie.width / 2 &&
+    ball.x < goalie.x + goalie.width / 2
+  ) {
+    const angle = Math.atan2(player.y - goalie.y, player.x - goalie.x);
+    ball.speedX = Math.cos(angle) * 5;
+    ball.speedY = Math.sin(angle) * 5;
+  }
+
+  const dx = ball.x - player.x;
+  const dy = ball.y - player.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  if (distance < player.width / 2 + ball.radius + 2) {
+    const velX = player.x - player.lastX;
+    const velY = player.y - player.lastY;
+    ball.speedX = velX * 1.5;
+    ball.speedY = velY * 1.5;
+    ball.x = player.x + (dx / distance) * (player.width / 2 + ball.radius + 2);
+    ball.y = player.y + (dy / distance) * (player.height / 2 + ball.radius + 2);
+  }
+}
+
+function resetBall() {
+  ball.x = 400;
+  ball.y = 400;
+  ball.speedX = 0;
+  ball.speedY = 0;
+}
+
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawField();
+  movePlayer();
+  moveGoalie();
+  moveBall();
+  drawPlayer();
+  drawBall();
+  drawGoalie();
+  requestAnimationFrame(gameLoop);
+}
+
+function startGame() {
+  const menu = document.getElementById("menu");
+  const inputNumero = document.getElementById("inputNumero");
+  menu.style.display = "none";
+  inputNumero.style.display = "none";
+  canvas.style.display = "block";
+  player.numero = document.getElementById("numero").value || "";
+  gameLoop();
+}
+
+function showNumero() {
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("inputNumero").style.display = "flex";
+}
+</script>
+</body>
+</html>
