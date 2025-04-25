@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Tradutor Espelhado</title>
+  <style>
+    body {
+      background: #111;
+      color: #eee;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    textarea {
+      width: 80%;
+      height: 100px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Tradutor de Teclado Espelhado</h1>
+
+<textarea id="input" placeholder="Digite o texto aqui..."></textarea><br>
+
+<button onclick="codificar()">Codificar</button>
+<button onclick="decodificar()">Decodificar</button>
+
+<textarea id="output" placeholder="Resultado..." readonly></textarea>
+
+<script>
+const linhas = [
+  ['q','w','e','r','t','y','u','i','o','p'],
+  ['a','s','d','f','g','h','j','k','l'],
+  ['z','x','c','v','b','n','m']
+];
+
+function criarMapeamento(linhas) {
+  const mapa = {};
+  for (const linha of linhas) {
+    const n = linha.length;
+    for (let i = 0; i < n; i++) {
+      mapa[linha[i]] = linha[n - 1 - i];
+    }
+  }
+  return mapa;
+}
+
+const mapa = criarMapeamento(linhas);
+const mapaReverso = Object.fromEntries(Object.entries(mapa).map(([k,v]) => [v,k]));
+
+function codificar() {
+  const texto = document.getElementById('input').value.toLowerCase();
+  let resultado = '';
+  for (const letra of texto) {
+    resultado += mapa[letra] || letra;
+  }
+  document.getElementById('output').value = resultado;
+}
+
+function decodificar() {
+  const texto = document.getElementById('input').value.toLowerCase();
+  let resultado = '';
+  for (const letra of texto) {
+    resultado += mapaReverso[letra] || letra;
+  }
+  document.getElementById('output').value = resultado;
+}
+</script>
+
+</body>
+</html>
